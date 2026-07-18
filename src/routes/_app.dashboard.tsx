@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { StatusBadge } from "@/components/StatusBadge";
+import { PostArt } from "@/components/PostArt";
 import { scheduledPosts, pendingApprovals, quickStats, weekStrip } from "@/lib/mock-data";
 import { ArrowUpRight, CheckCircle2, Clock, TrendingUp, Link2 } from "lucide-react";
 
@@ -54,7 +55,7 @@ function Dashboard() {
           <div className="mt-4 space-y-3">
             {pendingApprovals.map((p) => (
               <div key={p.id} className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/40 p-3">
-                <div className={`h-16 w-16 shrink-0 rounded-md bg-gradient-to-br ${p.thumbnail}`} />
+                <PostArt seed={p.id} className="h-16 w-16 shrink-0 rounded-md" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <PlatformIcon platform={p.platform} className="size-3" />
@@ -74,7 +75,7 @@ function Dashboard() {
 
         <Card className="border-border/60 bg-card/60 p-5">
           <h3 className="font-serif text-xl">Top post</h3>
-          <div className="mt-4 aspect-square w-full rounded-lg bg-gradient-to-br from-amber-200/30 to-amber-500/20" />
+          <PostArt seed="top-post" className="mt-4 aspect-square w-full rounded-lg" />
           <p className="mt-3 text-sm text-foreground/90">Behind the bar with Priya — 6am prep, one shot at a time.</p>
           <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
             <span>❤ 3,812</span><span>💬 214</span><span>↗ 96</span>
@@ -109,7 +110,7 @@ function Dashboard() {
         <div className="space-y-2">
           {upcoming.map((p) => (
             <div key={p.id} className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/40 p-3">
-              <div className={`h-12 w-12 shrink-0 rounded-md bg-gradient-to-br ${p.thumbnail}`} />
+              <PostArt seed={p.id} className="h-12 w-12 shrink-0 rounded-md" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground"><PlatformIcon platform={p.platform} className="size-3" /><span>{p.date} · {p.time}</span></div>
                 <p className="mt-0.5 truncate text-sm text-foreground/90">{p.caption}</p>

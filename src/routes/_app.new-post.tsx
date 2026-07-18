@@ -7,8 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { PostPreview } from "@/components/PostPreview";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { PostArt } from "@/components/PostArt";
 import { useAppStore, type Platform } from "@/lib/store";
-import { platformMeta, thumb } from "@/lib/mock-data";
+import { platformMeta } from "@/lib/mock-data";
 import { Upload, Sparkles, RefreshCw, Edit3, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/new-post")({
@@ -30,7 +31,8 @@ function NewPost() {
           <h3 className="font-serif text-lg">Asset</h3>
           {hasAsset ? (
             <div className="mt-3">
-              <div className={`relative aspect-square w-full rounded-lg bg-gradient-to-br ${thumb("yirg")}`}>
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+                <PostArt seed="yirg" className="absolute inset-0 h-full w-full" />
                 <button onClick={() => setHasAsset(false)} className="absolute right-2 top-2 rounded-md bg-black/40 p-1.5 text-cream backdrop-blur"><X className="size-3.5" /></button>
                 <div className="absolute bottom-2 left-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-cream backdrop-blur">yirgacheffe-drop.jpg · 3.2 MB</div>
               </div>
@@ -82,10 +84,10 @@ function NewPost() {
         {activePlatforms.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 bg-card/40 p-10 text-center text-sm text-muted-foreground">Rejected everything. Undo below.</div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 2xl:grid-cols-3">
             {activePlatforms.map((p) => (
               <div key={p} className="space-y-2">
-                <PostPreview platform={p} caption={caption} thumbnail={thumb("yirg")} />
+                <PostPreview platform={p} caption={caption} seed={`yirg-${p}`} />
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <PlatformIcon platform={p} className="size-3" /> {platformMeta[p].label}

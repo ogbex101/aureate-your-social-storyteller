@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { analytics } from "@/lib/mock-data";
+import { PostArt } from "@/components/PostArt";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { ArrowUpRight, Heart, MessageCircle, Share2 } from "lucide-react";
 
@@ -44,7 +45,7 @@ function Analytics() {
 
         <Card className="border-primary/40 bg-gradient-to-br from-primary/10 to-transparent p-5">
           <p className="text-xs uppercase tracking-widest text-primary">Top post</p>
-          <div className="mt-4 aspect-square w-full rounded-lg bg-gradient-to-br from-amber-200/30 to-amber-500/20" />
+          <PostArt seed="analytics-top-post" className="mt-4 aspect-square w-full rounded-lg" />
           <p className="mt-3 text-sm text-foreground/90">{analytics.topPost.caption}</p>
           <p className="mt-1 text-xs text-muted-foreground">{analytics.topPost.platform} · {analytics.topPost.posted}</p>
           <div className="mt-3 flex items-center gap-4 text-xs">

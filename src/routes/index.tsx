@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mic, Sparkles, MessageSquare, Share2, Zap, Check, ArrowRight } from "lucide-react";
 import { PlatformIcon } from "@/components/PlatformIcon";
+import { HeroMockup } from "@/components/HeroMockup";
 import type { Platform } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
@@ -40,12 +41,12 @@ function Index() {
         <Link to="/onboarding" className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Get started</Link>
       </nav>
 
-      <header className="relative overflow-hidden">
+      <header className="grain relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-40 left-1/2 size-[600px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute top-40 right-0 size-[400px] rounded-full bg-primary/10 blur-3xl" />
         </div>
-        <div className="relative mx-auto max-w-4xl px-6 pt-16 pb-24 text-center md:pt-28 md:pb-32">
+        <div className="relative mx-auto max-w-4xl px-6 pt-16 pb-24 text-center md:pt-28 md:pb-16">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary">
             <span className="size-1.5 rounded-full bg-primary" /> Now with voice
           </span>
@@ -65,13 +66,16 @@ function Index() {
               See a live demo
             </Link>
           </div>
-          <div className="mt-14 flex flex-wrap items-center justify-center gap-6 text-primary/70">
+          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-primary/70">
             {platforms.map((p) => (
               <div key={p} className="opacity-80 transition hover:scale-110 hover:opacity-100">
                 <PlatformIcon platform={p} className="size-5" />
               </div>
             ))}
           </div>
+        </div>
+        <div className="relative px-6 pb-20 md:pb-28">
+          <HeroMockup />
         </div>
       </header>
 

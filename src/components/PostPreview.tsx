@@ -1,6 +1,7 @@
 import type { Platform } from "@/lib/store";
 import { platformMeta } from "@/lib/mock-data";
 import { PlatformIcon } from "./PlatformIcon";
+import { PostArt } from "./PostArt";
 import { Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
 
 const aspect: Record<Platform, string> = {
@@ -14,7 +15,7 @@ const aspect: Record<Platform, string> = {
   threads: "aspect-square",
 };
 
-export function PostPreview({ platform, caption, thumbnail, brand = "meridiancoffee" }: { platform: Platform; caption: string; thumbnail: string; brand?: string }) {
+export function PostPreview({ platform, caption, seed, brand = "meridiancoffee" }: { platform: Platform; caption: string; seed: string; brand?: string }) {
   const meta = platformMeta[platform];
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
@@ -29,7 +30,8 @@ export function PostPreview({ platform, caption, thumbnail, brand = "meridiancof
           </div>
         </div>
       </div>
-      <div className={`relative w-full ${aspect[platform]} bg-gradient-to-br ${thumbnail} bg-background/40`}>
+      <div className={`relative w-full overflow-hidden ${aspect[platform]} bg-background/40`}>
+        <PostArt seed={seed} className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 flex items-end p-3">
           <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-cream/90 backdrop-blur">{platform === "tiktok" ? "1080 × 1920" : platform === "pinterest" ? "1080 × 1620" : platform === "youtube" || platform === "x" ? "1920 × 1080" : "1080 × 1080"}</span>
         </div>

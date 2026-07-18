@@ -8,6 +8,7 @@ import { scheduledPosts, platformMeta } from "@/lib/mock-data";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
+import { PostArt } from "@/components/PostArt";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Platform } from "@/lib/store";
 
@@ -87,7 +88,7 @@ function CalendarPage() {
             ) : selectedPosts.map((p) => (
               <div key={p.id} className="rounded-lg border border-border/50 bg-background/40 p-3">
                 <div className="flex items-start gap-3">
-                  <div className={`h-14 w-14 shrink-0 rounded-md bg-gradient-to-br ${p.thumbnail}`} />
+                  <PostArt seed={p.id} className="h-14 w-14 shrink-0 rounded-md" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <PlatformIcon platform={p.platform} className="size-3" /> {platformMeta[p.platform].label} · {p.time}

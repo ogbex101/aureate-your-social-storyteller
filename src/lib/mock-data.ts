@@ -9,16 +9,7 @@ export type ScheduledPost = {
   time: string; // HH:mm
   date: string; // yyyy-MM-dd
   status: PostStatus;
-  thumbnail: string;
   engagement?: { likes: number; comments: number; shares: number };
-};
-
-// Simple deterministic gradient thumbnails so we never need image assets.
-export const thumb = (seed: string) => {
-  const hues = ["from-amber-200/30 to-amber-500/20", "from-sky-300/20 to-indigo-500/20", "from-rose-300/20 to-orange-400/20", "from-emerald-300/20 to-teal-500/20", "from-fuchsia-300/20 to-purple-500/20"];
-  let h = 0;
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % hues.length;
-  return hues[h];
 };
 
 const today = new Date();
@@ -30,20 +21,20 @@ const shift = (days: number) => {
 };
 
 export const scheduledPosts: ScheduledPost[] = [
-  { id: "p1", platform: "instagram", caption: "The Ethiopia Yirgacheffe just landed. Blueberry, jasmine, a finish like honey on toast. Available Saturday.", time: "08:30", date: shift(0), status: "auto", thumbnail: thumb("p1") },
-  { id: "p2", platform: "linkedin", caption: "Three years in: what running a specialty roaster taught me about slow product cycles.", time: "11:15", date: shift(0), status: "approval", thumbnail: thumb("p2") },
-  { id: "p3", platform: "x", caption: "Hot take: the espresso martini renaissance is actually good for coffee culture. Change my mind.", time: "16:45", date: shift(0), status: "posted", thumbnail: thumb("p3"), engagement: { likes: 412, comments: 38, shares: 27 } },
-  { id: "p4", platform: "instagram", caption: "Behind the bar with Priya — 6am prep, one shot at a time.", time: "07:00", date: shift(1), status: "auto", thumbnail: thumb("p4") },
-  { id: "p5", platform: "threads", caption: "Kept a notebook of every drink we pulled this month. Here are the five that surprised us.", time: "13:00", date: shift(1), status: "approval", thumbnail: thumb("p5") },
-  { id: "p6", platform: "facebook", caption: "Saturday cupping is back — 12 seats, one origin, free coffee for anyone brave enough to guess the country.", time: "10:00", date: shift(2), status: "auto", thumbnail: thumb("p6") },
-  { id: "p7", platform: "instagram", caption: "New merch drop: the Origin Series tote. Undyed canvas, quiet gold thread.", time: "09:00", date: shift(3), status: "draft", thumbnail: thumb("p7") },
-  { id: "p8", platform: "linkedin", caption: "We're hiring a head of retail. Small team, big room to shape.", time: "14:30", date: shift(4), status: "auto", thumbnail: thumb("p8") },
-  { id: "p9", platform: "x", caption: "Reminder that overextraction tastes like regret.", time: "17:00", date: shift(5), status: "auto", thumbnail: thumb("p9") },
-  { id: "p10", platform: "instagram", caption: "Sunday matinée: latte art throwdown at the flagship. Winner gets a bag of anything on the shelf.", time: "11:30", date: shift(6), status: "approval", thumbnail: thumb("p10") },
-  { id: "p11", platform: "instagram", caption: "The Colombia Huila is back. Milk chocolate, orange peel, brown sugar finish.", time: "08:00", date: shift(8), status: "auto", thumbnail: thumb("p11") },
-  { id: "p12", platform: "pinterest", caption: "Fall menu moodboard — cardamom, oat, dark cherry.", time: "15:00", date: shift(9), status: "draft", thumbnail: thumb("p12") },
-  { id: "p13", platform: "youtube", caption: "How we cup a new lot — a 4-minute walkthrough from the roasting floor.", time: "12:00", date: shift(11), status: "auto", thumbnail: thumb("p13") },
-  { id: "p14", platform: "instagram", caption: "Farmer profile: Doña Elena, third-generation grower in Antigua.", time: "10:30", date: shift(14), status: "approval", thumbnail: thumb("p14") },
+  { id: "p1", platform: "instagram", caption: "The Ethiopia Yirgacheffe just landed. Blueberry, jasmine, a finish like honey on toast. Available Saturday.", time: "08:30", date: shift(0), status: "auto" },
+  { id: "p2", platform: "linkedin", caption: "Three years in: what running a specialty roaster taught me about slow product cycles.", time: "11:15", date: shift(0), status: "approval" },
+  { id: "p3", platform: "x", caption: "Hot take: the espresso martini renaissance is actually good for coffee culture. Change my mind.", time: "16:45", date: shift(0), status: "posted", engagement: { likes: 412, comments: 38, shares: 27 } },
+  { id: "p4", platform: "instagram", caption: "Behind the bar with Priya — 6am prep, one shot at a time.", time: "07:00", date: shift(1), status: "auto" },
+  { id: "p5", platform: "threads", caption: "Kept a notebook of every drink we pulled this month. Here are the five that surprised us.", time: "13:00", date: shift(1), status: "approval" },
+  { id: "p6", platform: "facebook", caption: "Saturday cupping is back — 12 seats, one origin, free coffee for anyone brave enough to guess the country.", time: "10:00", date: shift(2), status: "auto" },
+  { id: "p7", platform: "instagram", caption: "New merch drop: the Origin Series tote. Undyed canvas, quiet gold thread.", time: "09:00", date: shift(3), status: "draft" },
+  { id: "p8", platform: "linkedin", caption: "We're hiring a head of retail. Small team, big room to shape.", time: "14:30", date: shift(4), status: "auto" },
+  { id: "p9", platform: "x", caption: "Reminder that overextraction tastes like regret.", time: "17:00", date: shift(5), status: "auto" },
+  { id: "p10", platform: "instagram", caption: "Sunday matinée: latte art throwdown at the flagship. Winner gets a bag of anything on the shelf.", time: "11:30", date: shift(6), status: "approval" },
+  { id: "p11", platform: "instagram", caption: "The Colombia Huila is back. Milk chocolate, orange peel, brown sugar finish.", time: "08:00", date: shift(8), status: "auto" },
+  { id: "p12", platform: "pinterest", caption: "Fall menu moodboard — cardamom, oat, dark cherry.", time: "15:00", date: shift(9), status: "draft" },
+  { id: "p13", platform: "youtube", caption: "How we cup a new lot — a 4-minute walkthrough from the roasting floor.", time: "12:00", date: shift(11), status: "auto" },
+  { id: "p14", platform: "instagram", caption: "Farmer profile: Doña Elena, third-generation grower in Antigua.", time: "10:30", date: shift(14), status: "approval" },
 ];
 
 export const pendingApprovals = scheduledPosts.filter((p) => p.status === "approval");
