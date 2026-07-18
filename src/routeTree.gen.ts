@@ -9,38 +9,177 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTeamRouteImport } from './routes/_app.team'
+import { Route as AppScheduleRouteImport } from './routes/_app.schedule'
+import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
+import { Route as AppNewPostRouteImport } from './routes/_app.new-post'
+import { Route as AppMessagingRouteImport } from './routes/_app.messaging'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppConnectionsRouteImport } from './routes/_app.connections'
+import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
+import { Route as AppBrandRouteImport } from './routes/_app.brand'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppTeamRoute = AppTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScheduleRoute = AppScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNewPostRoute = AppNewPostRouteImport.update({
+  id: '/new-post',
+  path: '/new-post',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMessagingRoute = AppMessagingRouteImport.update({
+  id: '/messaging',
+  path: '/messaging',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConnectionsRoute = AppConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrandRoute = AppBrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/calendar': typeof AppCalendarRoute
+  '/connections': typeof AppConnectionsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/messaging': typeof AppMessagingRoute
+  '/new-post': typeof AppNewPostRoute
+  '/onboarding': typeof AppOnboardingRoute
+  '/schedule': typeof AppScheduleRoute
+  '/team': typeof AppTeamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/calendar': typeof AppCalendarRoute
+  '/connections': typeof AppConnectionsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/messaging': typeof AppMessagingRoute
+  '/new-post': typeof AppNewPostRoute
+  '/onboarding': typeof AppOnboardingRoute
+  '/schedule': typeof AppScheduleRoute
+  '/team': typeof AppTeamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/brand': typeof AppBrandRoute
+  '/_app/calendar': typeof AppCalendarRoute
+  '/_app/connections': typeof AppConnectionsRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/messaging': typeof AppMessagingRoute
+  '/_app/new-post': typeof AppNewPostRoute
+  '/_app/onboarding': typeof AppOnboardingRoute
+  '/_app/schedule': typeof AppScheduleRoute
+  '/_app/team': typeof AppTeamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/brand'
+    | '/calendar'
+    | '/connections'
+    | '/dashboard'
+    | '/messaging'
+    | '/new-post'
+    | '/onboarding'
+    | '/schedule'
+    | '/team'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/analytics'
+    | '/brand'
+    | '/calendar'
+    | '/connections'
+    | '/dashboard'
+    | '/messaging'
+    | '/new-post'
+    | '/onboarding'
+    | '/schedule'
+    | '/team'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/analytics'
+    | '/_app/brand'
+    | '/_app/calendar'
+    | '/_app/connections'
+    | '/_app/dashboard'
+    | '/_app/messaging'
+    | '/_app/new-post'
+    | '/_app/onboarding'
+    | '/_app/schedule'
+    | '/_app/team'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +187,110 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/team': {
+      id: '/_app/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AppTeamRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/schedule': {
+      id: '/_app/schedule'
+      path: '/schedule'
+      fullPath: '/schedule'
+      preLoaderRoute: typeof AppScheduleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/onboarding': {
+      id: '/_app/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/new-post': {
+      id: '/_app/new-post'
+      path: '/new-post'
+      fullPath: '/new-post'
+      preLoaderRoute: typeof AppNewPostRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/messaging': {
+      id: '/_app/messaging'
+      path: '/messaging'
+      fullPath: '/messaging'
+      preLoaderRoute: typeof AppMessagingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/connections': {
+      id: '/_app/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof AppConnectionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/brand': {
+      id: '/_app/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof AppBrandRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppBrandRoute: typeof AppBrandRoute
+  AppCalendarRoute: typeof AppCalendarRoute
+  AppConnectionsRoute: typeof AppConnectionsRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppMessagingRoute: typeof AppMessagingRoute
+  AppNewPostRoute: typeof AppNewPostRoute
+  AppOnboardingRoute: typeof AppOnboardingRoute
+  AppScheduleRoute: typeof AppScheduleRoute
+  AppTeamRoute: typeof AppTeamRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppBrandRoute: AppBrandRoute,
+  AppCalendarRoute: AppCalendarRoute,
+  AppConnectionsRoute: AppConnectionsRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppMessagingRoute: AppMessagingRoute,
+  AppNewPostRoute: AppNewPostRoute,
+  AppOnboardingRoute: AppOnboardingRoute,
+  AppScheduleRoute: AppScheduleRoute,
+  AppTeamRoute: AppTeamRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
