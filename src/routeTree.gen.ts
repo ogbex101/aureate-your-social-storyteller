@@ -21,6 +21,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppConnectionsRouteImport } from './routes/_app.connections'
 import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as AppBrandRouteImport } from './routes/_app.brand'
+import { Route as AppAssetsRouteImport } from './routes/_app.assets'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 
 const LoginRoute = LoginRouteImport.update({
@@ -82,6 +83,11 @@ const AppBrandRoute = AppBrandRouteImport.update({
   path: '/brand',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssetsRoute = AppAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/assets': typeof AppAssetsRoute
   '/brand': typeof AppBrandRoute
   '/calendar': typeof AppCalendarRoute
   '/connections': typeof AppConnectionsRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/assets': typeof AppAssetsRoute
   '/brand': typeof AppBrandRoute
   '/calendar': typeof AppCalendarRoute
   '/connections': typeof AppConnectionsRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/assets': typeof AppAssetsRoute
   '/_app/brand': typeof AppBrandRoute
   '/_app/calendar': typeof AppCalendarRoute
   '/_app/connections': typeof AppConnectionsRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/analytics'
+    | '/assets'
     | '/brand'
     | '/calendar'
     | '/connections'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/analytics'
+    | '/assets'
     | '/brand'
     | '/calendar'
     | '/connections'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/analytics'
+    | '/_app/assets'
     | '/_app/brand'
     | '/_app/calendar'
     | '/_app/connections'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBrandRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/assets': {
+      id: '/_app/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AppAssetsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/analytics': {
       id: '/_app/analytics'
       path: '/analytics'
@@ -282,6 +301,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAssetsRoute: typeof AppAssetsRoute
   AppBrandRoute: typeof AppBrandRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppConnectionsRoute: typeof AppConnectionsRoute
@@ -295,6 +315,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAssetsRoute: AppAssetsRoute,
   AppBrandRoute: AppBrandRoute,
   AppCalendarRoute: AppCalendarRoute,
   AppConnectionsRoute: AppConnectionsRoute,

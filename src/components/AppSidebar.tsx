@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, PenSquare, Users, Link2, MessageSquare, BarChart3, Sparkles, Settings, Clock } from "lucide-react";
+import { LayoutDashboard, CalendarDays, PenSquare, Users, Link2, MessageSquare, BarChart3, Sparkles, Settings, Clock, Image } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { useProfile } from "@/lib/queries";
 
@@ -7,6 +7,7 @@ const primary = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Calendar", url: "/calendar", icon: CalendarDays },
   { title: "New post", url: "/new-post", icon: PenSquare },
+  { title: "Assets", url: "/assets", icon: Image },
   { title: "Schedule", url: "/schedule", icon: Clock },
 ];
 

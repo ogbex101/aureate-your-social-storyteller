@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { useAuth } from "./AuthProvider";
 import type { Platform } from "./store";
-import type { PostRow, PostStatusRow, PlatformConnectionRow, ProfileRow } from "./database.types";
+import type { PostRow, PostStatusRow, PlatformConnectionRow, ProfileRow, AssetRow } from "./database.types";
+
+const ASSET_BUCKET = "assets";
 
 export function useProfile() {
   const { user } = useAuth();
@@ -51,7 +53,7 @@ export function useCreatePosts() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (posts: { platform: Platform; caption: string; status: PostStatusRow; auto_post: boolean; scheduled_time: string }[]) => {
+    mutationFn: async (posts: { platform: Platform; caption: string; status: PostStatusRow; auto_post: boolean; scheduled_time: string; asset_id?: string | null }[]) => {
       if (!user) throw new Error("Not signed in");
       const { error } = await supabase.from("posts").insert(posts.map((p) => ({ ...p, user_id: user.id })));
       if (error) throw error;
@@ -104,6 +106,71 @@ export function useSetConnections() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["connections", user?.id] }),
+  });
+}
+
+export type AssetWithUrl = AssetRow & { url: string | null };
+
+export function useAssets() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["assets", user?.id],
+    queryFn: async (): Promise<AssetWithUrl[]> => {
+      const { data, error } = await supabase.from("assets").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as AssetRow[];
+      if (rows.length === 0) return [];
+      const { data: signed } = await supabase.storage.from(ASSET_BUCKET).createSignedUrls(rows.map((r) => r.storage_path), 3600);
+      return rows.map((r, i) => ({ ...r, url: signed?.[i]?.signedUrl ?? null }));
+    },
+    enabled: !!user,
+  });
+}
+
+export function useUploadAsset() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      if (!user) throw new Error("Not signed in");
+      const path = `${user.id}/${crypto.randomUUID()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from(ASSET_BUCKET).upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data, error } = await supabase
+        .from("assets")
+        .insert({ user_id: user.id, storage_path: path, file_name: file.name, file_type: file.type, tags: [] })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as AssetRow;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", user?.id] }),
+  });
+}
+
+export function useDeleteAsset() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (asset: AssetRow) => {
+      const { error: storageError } = await supabase.storage.from(ASSET_BUCKET).remove([asset.storage_path]);
+      if (storageError) throw storageError;
+      const { error } = await supabase.from("assets").delete().eq("id", asset.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", user?.id] }),
+  });
+}
+
+export function useUpdateAssetTags() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, tags }: { id: string; tags: string[] }) => {
+      const { error } = await supabase.from("assets").update({ tags }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", user?.id] }),
   });
 }
 
