@@ -1,62 +1,90 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { platformMeta } from "@/lib/mock-data";
-import { useAppStore, type Platform } from "@/lib/store";
-import { useAuth } from "@/lib/AuthProvider";
-import { supabase } from "@/lib/supabase";
+import type { AccountType, Platform } from "@/lib/store";
+import { useProfile, useUpsertProfile, useConnections, useSetConnections } from "@/lib/queries";
 import { Check, User, Users } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/onboarding")({
   component: Onboarding,
 });
 
 const allPlatforms: Platform[] = ["instagram", "facebook", "linkedin", "tiktok", "x", "pinterest", "youtube", "threads"];
+const emptyConnected = Object.fromEntries(allPlatforms.map((p) => [p, false])) as Record<Platform, boolean>;
 
 function Onboarding() {
   const navigate = useNavigate();
-  const store = useAppStore();
-  const { user } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: connections, isLoading: connectionsLoading } = useConnections();
+  const upsertProfile = useUpsertProfile();
+  const setConnections = useSetConnections();
+
   const [step, setStep] = useState(1);
-  const [tone, setTone] = useState(store.toneWords.join(", "));
-  const [sample, setSample] = useState("We keep it warm, considered, a little playful. Never salesy. Details over hype.");
+  const [accountType, setAccountType] = useState<AccountType>("individual");
+  const [brandName, setBrandName] = useState("");
+  const [tone, setTone] = useState("");
+  const [sample, setSample] = useState("");
+  const [connected, setConnected] = useState<Record<Platform, boolean>>(emptyConnected);
   const [saving, setSaving] = useState(false);
+  const seeded = useRef(false);
+
+  useEffect(() => {
+    if (seeded.current || profileLoading || connectionsLoading) return;
+    seeded.current = true;
+    if (profile) {
+      setAccountType(profile.account_type);
+      setBrandName(profile.brand_name);
+      setTone(profile.tone_words.join(", "));
+      setSample(profile.writing_sample || "We keep it warm, considered, a little playful. Never salesy. Details over hype.");
+    } else {
+      setSample("We keep it warm, considered, a little playful. Never salesy. Details over hype.");
+    }
+    if (connections?.length) {
+      const map = { ...emptyConnected };
+      for (const c of connections) if (c.status === "connected") map[c.platform] = true;
+      setConnected(map);
+    }
+  }, [profile, connections, profileLoading, connectionsLoading]);
 
   const finish = async () => {
     const toneWords = tone.split(",").map((s) => s.trim()).filter(Boolean);
-    store.setToneWords(toneWords);
-    store.setOnboarded(true);
-    if (user) {
-      setSaving(true);
-      await supabase.from("profiles").upsert({
-        id: user.id,
-        account_type: store.accountType,
-        brand_name: store.brandName,
+    setSaving(true);
+    try {
+      await upsertProfile.mutateAsync({
+        account_type: accountType,
+        brand_name: brandName,
         tone_words: toneWords,
         writing_sample: sample,
       });
-      const connectedPlatforms = allPlatforms.filter((p) => store.connected[p]);
-      if (connectedPlatforms.length > 0) {
-        await supabase.from("platform_connections").upsert(
-          connectedPlatforms.map((platform) => ({
-            user_id: user.id,
-            platform,
-            status: "connected" as const,
-            connected_at: new Date().toISOString(),
-          })),
-          { onConflict: "user_id,platform" },
-        );
+      const activePlatforms = allPlatforms.filter((p) => connected[p]);
+      if (activePlatforms.length > 0) {
+        await setConnections.mutateAsync(activePlatforms);
       }
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save your setup. Try again.");
+    } finally {
       setSaving(false);
     }
-    navigate({ to: "/dashboard" });
   };
 
   const next = () => (step < 3 ? setStep(step + 1) : finish());
+
+  if (profileLoading || connectionsLoading) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -79,7 +107,7 @@ function Onboarding() {
                 { id: "individual", icon: User, title: "Individual / Solo", body: "You're the drafter and the approver. Fast, low-ceremony workflow." },
                 { id: "organization", icon: Users, title: "Organization / Team", body: "Multiple people, roles, and approval routing across channels." },
               ].map((opt) => (
-                <button key={opt.id} onClick={() => store.setAccountType(opt.id as "individual" | "organization")} className={`text-left rounded-xl border p-5 transition ${store.accountType === opt.id ? "border-primary bg-primary/10" : "border-border/60 hover:border-primary/40"}`}>
+                <button key={opt.id} onClick={() => setAccountType(opt.id as AccountType)} className={`text-left rounded-xl border p-5 transition ${accountType === opt.id ? "border-primary bg-primary/10" : "border-border/60 hover:border-primary/40"}`}>
                   <opt.icon className="size-5 text-primary" />
                   <h3 className="mt-3 font-serif text-lg">{opt.title}</h3>
                   <p className="mt-1 text-sm text-muted-foreground">{opt.body}</p>
@@ -95,7 +123,7 @@ function Onboarding() {
             <div className="mt-6 space-y-4">
               <div>
                 <label className="text-xs uppercase tracking-widest text-primary">Brand name</label>
-                <Input value={store.brandName} onChange={(e) => store.setBrandName(e.target.value)} className="mt-1 border-border/60 bg-background/40" />
+                <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Your brand or business name" className="mt-1 border-border/60 bg-background/40" />
               </div>
               <div>
                 <label className="text-xs uppercase tracking-widest text-primary">Tone words (comma separated)</label>
@@ -114,12 +142,12 @@ function Onboarding() {
             <p className="mt-2 text-muted-foreground">You can add more in Connections anytime.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {allPlatforms.map((p) => (
-                <button key={p} onClick={() => store.toggleConnection(p)} className={`flex items-center justify-between rounded-xl border p-4 text-left transition ${store.connected[p] ? "border-primary bg-primary/10" : "border-border/60 hover:border-primary/40"}`}>
+                <button key={p} onClick={() => setConnected((c) => ({ ...c, [p]: !c[p] }))} className={`flex items-center justify-between rounded-xl border p-4 text-left transition ${connected[p] ? "border-primary bg-primary/10" : "border-border/60 hover:border-primary/40"}`}>
                   <div className="flex items-center gap-3">
                     <PlatformIcon platform={p} className="size-5 text-primary" />
                     <span className="font-medium">{platformMeta[p].label}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{store.connected[p] ? "Connected" : "Connect"}</span>
+                  <span className="text-xs text-muted-foreground">{connected[p] ? "Connected" : "Connect"}</span>
                 </button>
               ))}
             </div>
@@ -128,7 +156,7 @@ function Onboarding() {
 
         <div className="mt-8 flex items-center justify-between">
           <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>Back</Button>
-          <Button onClick={next} disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90">{saving ? "Saving…" : step === 3 ? "Finish setup" : "Continue"}</Button>
+          <Button onClick={next} disabled={saving || (step === 2 && !brandName.trim())} className="bg-primary text-primary-foreground hover:bg-primary/90">{saving ? "Saving…" : step === 3 ? "Finish setup" : "Continue"}</Button>
         </div>
       </Card>
     </div>

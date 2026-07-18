@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, CalendarDays, PenSquare, Users, Link2, MessageSquare, BarChart3, Sparkles, Settings, Clock } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
-import { useAppStore } from "@/lib/store";
+import { useProfile } from "@/lib/queries";
 
 const primary = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -23,7 +23,8 @@ const settings = [
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const accountType = useAppStore((s) => s.accountType);
+  const { data: profile } = useProfile();
+  const accountType = profile?.account_type ?? "individual";
   const isActive = (url: string) => pathname === url || pathname.startsWith(url + "/");
 
   const renderGroup = (label: string, items: { title: string; url: string; icon: typeof LayoutDashboard; orgOnly?: boolean }[]) => (
@@ -53,7 +54,7 @@ export function AppSidebar() {
           <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-serif font-bold text-lg">A</div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="font-serif text-lg font-semibold text-foreground">Aureate</span>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-primary/70">Meridian Coffee</span>
+            <span className="truncate text-[10px] uppercase tracking-[0.2em] text-primary/70">{profile?.brand_name || "Get set up"}</span>
           </div>
         </Link>
       </SidebarHeader>

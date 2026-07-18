@@ -10,7 +10,7 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 import { PostArt } from "@/components/PostArt";
 import type { Platform } from "@/lib/store";
 import { platformMeta } from "@/lib/mock-data";
-import { useConnections, useCreatePosts } from "@/lib/queries";
+import { useConnections, useCreatePosts, useProfile } from "@/lib/queries";
 import { Upload, Sparkles, RefreshCw, Edit3, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,9 +21,11 @@ export const Route = createFileRoute("/_app/new-post")({
 function NewPost() {
   const navigate = useNavigate();
   const { data: connections, isLoading: connectionsLoading } = useConnections();
+  const { data: profile } = useProfile();
   const createPosts = useCreatePosts();
-  const [caption, setCaption] = useState("The Ethiopia Yirgacheffe just landed. Blueberry, jasmine, a finish like honey on toast. Available Saturday from 8am at the flagship. Doors open at 7:45 for the regulars.");
-  const [hasAsset, setHasAsset] = useState(true);
+  const brandHandle = profile?.brand_name ? profile.brand_name.toLowerCase().replace(/[^a-z0-9]/g, "") : "yourbrand";
+  const [caption, setCaption] = useState("");
+  const [hasAsset, setHasAsset] = useState(false);
   const [requireApproval, setRequireApproval] = useState(false);
   const [rejected, setRejected] = useState<Platform[]>([]);
   const connectedPlatforms = (connections ?? []).filter((c) => c.status === "connected").map((c) => c.platform);
@@ -57,9 +59,9 @@ function NewPost() {
           {hasAsset ? (
             <div className="mt-3">
               <div className="relative aspect-square w-full overflow-hidden rounded-lg">
-                <PostArt seed="yirg" className="absolute inset-0 h-full w-full" />
+                <PostArt seed="new-post-asset" className="absolute inset-0 h-full w-full" />
                 <button onClick={() => setHasAsset(false)} className="absolute right-2 top-2 rounded-md bg-black/40 p-1.5 text-cream backdrop-blur"><X className="size-3.5" /></button>
-                <div className="absolute bottom-2 left-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-cream backdrop-blur">yirgacheffe-drop.jpg · 3.2 MB</div>
+                <div className="absolute bottom-2 left-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-cream backdrop-blur">AI-generated image</div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">Aureate will crop per platform automatically.</p>
             </div>
@@ -81,9 +83,9 @@ function NewPost() {
             <h3 className="font-serif text-lg">Caption</h3>
             <Button size="sm" variant="ghost" className="text-primary"><Sparkles className="mr-1 size-3.5" /> Rewrite</Button>
           </div>
-          <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} className="mt-3 border-border/60 bg-background/40" />
+          <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} placeholder="What do you want to tell your audience?" className="mt-3 border-border/60 bg-background/40" />
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{caption.length} chars · in Meridian's voice</span>
+            <span>{caption.length} chars{profile?.brand_name ? ` · in ${profile.brand_name}'s voice` : ""}</span>
             <span className="text-primary">4 hashtag suggestions</span>
           </div>
         </Card>
@@ -98,9 +100,10 @@ function NewPost() {
           </div>
         </Card>
 
-        <Button size="lg" disabled={activePlatforms.length === 0 || createPosts.isPending} onClick={schedule} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button size="lg" disabled={activePlatforms.length === 0 || !caption.trim() || createPosts.isPending} onClick={schedule} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
           {createPosts.isPending ? "Scheduling…" : `Schedule across ${activePlatforms.length} platform${activePlatforms.length !== 1 ? "s" : ""}`}
         </Button>
+        {!caption.trim() && <p className="text-center text-xs text-muted-foreground">Write a caption before scheduling.</p>}
       </div>
 
       <div>
@@ -119,7 +122,7 @@ function NewPost() {
           <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 2xl:grid-cols-3">
             {activePlatforms.map((p) => (
               <div key={p} className="space-y-2">
-                <PostPreview platform={p} caption={caption} seed={`yirg-${p}`} />
+                <PostPreview platform={p} caption={caption} seed={`new-post-${p}`} brand={brandHandle} />
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <PlatformIcon platform={p} className="size-3" /> {platformMeta[p].label}

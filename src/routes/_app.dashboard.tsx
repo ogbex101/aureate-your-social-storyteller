@@ -22,24 +22,27 @@ function Dashboard() {
   const approve = useApprovePost();
 
   const now = new Date();
-  const weekEnd = new Date(now);
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(startOfToday);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
+  const queuedStatuses = ["scheduled", "approved", "pending_approval"];
   const pendingApprovals = (posts ?? []).filter((p) => p.status === "pending_approval");
-  const upcoming = (posts ?? []).filter((p) => p.scheduled_time && new Date(p.scheduled_time) >= now).slice(0, 5);
+  // "Up next" is the queue of anything not yet posted/failed — not a strict future-time
+  // check, since a post scheduled for "now" (no time-picker wired yet) would otherwise
+  // always read as already-past by the time this renders.
+  const upcoming = (posts ?? []).filter((p) => queuedStatuses.includes(p.status)).slice(0, 5);
   const postedWithEngagement = (posts ?? []).filter((p) => p.status === "posted" && p.engagement);
   const topPost = postedWithEngagement.sort((a, b) => (b.engagement?.likes ?? 0) - (a.engagement?.likes ?? 0))[0];
 
-  const postsThisWeek = (posts ?? []).filter((p) => p.scheduled_time && new Date(p.scheduled_time) >= now && new Date(p.scheduled_time) < weekEnd).length;
+  const postsThisWeek = (posts ?? []).filter((p) => p.scheduled_time && new Date(p.scheduled_time) >= startOfToday && new Date(p.scheduled_time) < weekEnd).length;
   const scheduledCount = (posts ?? []).filter((p) => p.status === "scheduled").length;
   const connectedCount = connections?.filter((c) => c.status === "connected").length ?? 0;
-  const avgEngagement = postedWithEngagement.length
-    ? (postedWithEngagement.reduce((sum, p) => sum + (p.engagement?.likes ?? 0) / 100, 0) / postedWithEngagement.length).toFixed(1)
-    : "—";
 
   const stats = [
     { label: "Posts this week", value: postsThisWeek, icon: Clock },
-    { label: "Engagement rate", value: avgEngagement === "—" ? "—" : `${avgEngagement}%`, icon: TrendingUp },
+    { label: "Needs approval", value: pendingApprovals.length, icon: TrendingUp },
     { label: "Connected platforms", value: `${connectedCount} / 8`, icon: Link2 },
     { label: "Scheduled", value: scheduledCount, icon: CheckCircle2 },
   ];

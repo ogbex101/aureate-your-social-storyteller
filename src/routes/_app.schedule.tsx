@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useAppStore } from "@/lib/store";
 import { Sparkles, Clock, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/_app/schedule")({
@@ -13,7 +12,7 @@ export const Route = createFileRoute("/_app/schedule")({
 });
 
 function Schedule() {
-  const { requireApprovalDefault, setRequireApproval } = useAppStore();
+  const [requireApprovalDefault, setRequireApproval] = useState(false);
   const [date, setDate] = useState("2026-07-25");
   const [time, setTime] = useState("08:30");
   return (

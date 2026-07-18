@@ -20,13 +20,6 @@ export const team = [
   { id: "u4", name: "Marcus Vale", role: "Approver", email: "marcus@meridiancoffee.co", avatar: "MV" },
 ] as const;
 
-export const contentPillars = [
-  { name: "Behind the bar", desc: "The people, the craft, the 6am prep." },
-  { name: "Origin stories", desc: "Growers, farms, and the countries we work with." },
-  { name: "Weekend rituals", desc: "Slow mornings, cupping days, latte art nights." },
-  { name: "New arrivals", desc: "Roast drops, seasonal menus, merch." },
-];
-
 export const analytics = {
   weekly: [
     { week: "W-5", engagement: 3.2, posts: 8 },

@@ -15,7 +15,7 @@ const aspect: Record<Platform, string> = {
   threads: "aspect-square",
 };
 
-export function PostPreview({ platform, caption, seed, brand = "meridiancoffee" }: { platform: Platform; caption: string; seed: string; brand?: string }) {
+export function PostPreview({ platform, caption, seed, brand = "yourbrand" }: { platform: Platform; caption: string; seed: string; brand?: string }) {
   const meta = platformMeta[platform];
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card">

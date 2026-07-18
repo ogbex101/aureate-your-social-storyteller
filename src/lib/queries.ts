@@ -2,7 +2,33 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { useAuth } from "./AuthProvider";
 import type { Platform } from "./store";
-import type { PostRow, PostStatusRow, PlatformConnectionRow } from "./database.types";
+import type { PostRow, PostStatusRow, PlatformConnectionRow, ProfileRow } from "./database.types";
+
+export function useProfile() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async (): Promise<ProfileRow | null> => {
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle();
+      if (error) throw error;
+      return data as ProfileRow | null;
+    },
+    enabled: !!user,
+  });
+}
+
+export function useUpsertProfile() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (profile: Partial<Omit<ProfileRow, "id" | "created_at" | "updated_at">>) => {
+      if (!user) throw new Error("Not signed in");
+      const { error } = await supabase.from("profiles").upsert({ id: user.id, ...profile });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile", user?.id] }),
+  });
+}
 
 export function usePosts() {
   const { user } = useAuth();
@@ -56,6 +82,28 @@ export function useConnections() {
       return (data ?? []) as PlatformConnectionRow[];
     },
     enabled: !!user,
+  });
+}
+
+export function useSetConnections() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (platforms: Platform[]) => {
+      if (!user) throw new Error("Not signed in");
+      if (platforms.length === 0) return;
+      const { error } = await supabase.from("platform_connections").upsert(
+        platforms.map((platform) => ({
+          user_id: user.id,
+          platform,
+          status: "connected" as const,
+          connected_at: new Date().toISOString(),
+        })),
+        { onConflict: "user_id,platform" },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["connections", user?.id] }),
   });
 }
 

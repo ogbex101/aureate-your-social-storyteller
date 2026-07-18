@@ -17,6 +17,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,13 +27,27 @@ function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setSubmitting(true);
-    const { error } = mode === "signin"
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+    if (mode === "signin") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setSubmitting(false);
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      navigate({ to: "/onboarding" });
+      return;
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setSubmitting(false);
     if (error) {
       setError(error.message);
+      return;
+    }
+    if (!data.session) {
+      setNotice("Check your email to confirm your account, then sign in.");
+      setMode("signin");
       return;
     }
     navigate({ to: "/onboarding" });
@@ -69,6 +84,7 @@ function Login() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 border-border/60 bg-background/40" />
             </div>
+            {notice && <p className="text-sm text-emerald-400">{notice}</p>}
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               {submitting ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
@@ -85,7 +101,7 @@ function Login() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {mode === "signin" ? "New to Aureate?" : "Already have an account?"}{" "}
-            <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="text-primary hover:underline">
+            <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); setNotice(null); }} className="text-primary hover:underline">
               {mode === "signin" ? "Create an account" : "Sign in"}
             </button>
           </p>

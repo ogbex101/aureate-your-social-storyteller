@@ -18,8 +18,11 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "profiles: owner select" on public.profiles;
 create policy "profiles: owner select" on public.profiles for select using (auth.uid() = id);
+drop policy if exists "profiles: owner insert" on public.profiles;
 create policy "profiles: owner insert" on public.profiles for insert with check (auth.uid() = id);
+drop policy if exists "profiles: owner update" on public.profiles;
 create policy "profiles: owner update" on public.profiles for update using (auth.uid() = id);
 
 -- 2. platform_connections ----------------------------------------------------
@@ -36,6 +39,7 @@ create table if not exists public.platform_connections (
 
 alter table public.platform_connections enable row level security;
 
+drop policy if exists "platform_connections: owner all" on public.platform_connections;
 create policy "platform_connections: owner all" on public.platform_connections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -52,6 +56,7 @@ create table if not exists public.assets (
 
 alter table public.assets enable row level security;
 
+drop policy if exists "assets: owner all" on public.assets;
 create policy "assets: owner all" on public.assets
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -72,6 +77,7 @@ create table if not exists public.posts (
 
 alter table public.posts enable row level security;
 
+drop policy if exists "posts: owner all" on public.posts;
 create policy "posts: owner all" on public.posts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -90,12 +96,16 @@ create table if not exists public.team_members (
 
 alter table public.team_members enable row level security;
 
+drop policy if exists "team_members: owner or member select" on public.team_members;
 create policy "team_members: owner or member select" on public.team_members
   for select using (auth.uid() = owner_id or auth.uid() = user_id);
+drop policy if exists "team_members: owner insert" on public.team_members;
 create policy "team_members: owner insert" on public.team_members
   for insert with check (auth.uid() = owner_id);
+drop policy if exists "team_members: owner update" on public.team_members;
 create policy "team_members: owner update" on public.team_members
   for update using (auth.uid() = owner_id);
+drop policy if exists "team_members: owner delete" on public.team_members;
 create policy "team_members: owner delete" on public.team_members
   for delete using (auth.uid() = owner_id);
 
@@ -112,9 +122,12 @@ create table if not exists public.approval_requests (
 
 alter table public.approval_requests enable row level security;
 
+drop policy if exists "approval_requests: participants select" on public.approval_requests;
 create policy "approval_requests: participants select" on public.approval_requests
   for select using (auth.uid() = requested_by or auth.uid() = approver_id);
+drop policy if exists "approval_requests: requester insert" on public.approval_requests;
 create policy "approval_requests: requester insert" on public.approval_requests
   for insert with check (auth.uid() = requested_by);
+drop policy if exists "approval_requests: participants update" on public.approval_requests;
 create policy "approval_requests: participants update" on public.approval_requests
   for update using (auth.uid() = requested_by or auth.uid() = approver_id);

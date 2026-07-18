@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAppStore } from "@/lib/store";
+import { useProfile } from "@/lib/queries";
 import { team } from "@/lib/mock-data";
 import { Users, Plus, ShieldCheck, Pencil } from "lucide-react";
 
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_app/team")({
 });
 
 function Team() {
-  const accountType = useAppStore((s) => s.accountType);
-  if (accountType !== "organization") {
+  const { data: profile } = useProfile();
+  if (profile?.account_type !== "organization") {
     return (
       <Card className="border-primary/30 bg-gradient-to-b from-primary/10 to-transparent p-10 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary"><Users className="size-5" /></div>

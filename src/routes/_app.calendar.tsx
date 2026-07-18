@@ -33,7 +33,8 @@ function CalendarPage() {
   while (cells.length % 7 !== 0) cells.push(null);
 
   const iso = (d: number) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  const dateOf = (p: NonNullable<typeof posts>[number]) => (p.scheduled_time ? p.scheduled_time.slice(0, 10) : null);
+  const localDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dateOf = (p: NonNullable<typeof posts>[number]) => (p.scheduled_time ? localDateKey(new Date(p.scheduled_time)) : null);
   const postsFor = (d: number) => (posts ?? []).filter((p) => dateOf(p) === iso(d));
 
   const selectedPosts = selected ? (posts ?? []).filter((p) => dateOf(p) === selected) : [];
