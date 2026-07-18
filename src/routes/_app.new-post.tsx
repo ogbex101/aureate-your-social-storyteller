@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,46 @@ import { Label } from "@/components/ui/label";
 import { PostPreview } from "@/components/PostPreview";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { PostArt } from "@/components/PostArt";
-import { useAppStore, type Platform } from "@/lib/store";
+import type { Platform } from "@/lib/store";
 import { platformMeta } from "@/lib/mock-data";
+import { useConnections, useCreatePosts } from "@/lib/queries";
 import { Upload, Sparkles, RefreshCw, Edit3, X } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/new-post")({
   component: NewPost,
 });
 
 function NewPost() {
-  const { connected } = useAppStore();
+  const navigate = useNavigate();
+  const { data: connections, isLoading: connectionsLoading } = useConnections();
+  const createPosts = useCreatePosts();
   const [caption, setCaption] = useState("The Ethiopia Yirgacheffe just landed. Blueberry, jasmine, a finish like honey on toast. Available Saturday from 8am at the flagship. Doors open at 7:45 for the regulars.");
   const [hasAsset, setHasAsset] = useState(true);
   const [requireApproval, setRequireApproval] = useState(false);
   const [rejected, setRejected] = useState<Platform[]>([]);
-  const activePlatforms = (Object.entries(connected) as [Platform, boolean][]).filter(([, v]) => v).map(([k]) => k).filter((p) => !rejected.includes(p));
+  const connectedPlatforms = (connections ?? []).filter((c) => c.status === "connected").map((c) => c.platform);
+  const activePlatforms = connectedPlatforms.filter((p) => !rejected.includes(p));
+
+  const schedule = () => {
+    const now = new Date().toISOString();
+    createPosts.mutate(
+      activePlatforms.map((platform) => ({
+        platform,
+        caption,
+        status: requireApproval ? "pending_approval" : "scheduled",
+        auto_post: !requireApproval,
+        scheduled_time: now,
+      })),
+      {
+        onError: (e) => toast.error(e.message),
+        onSuccess: () => {
+          toast.success(`Scheduled across ${activePlatforms.length} platform${activePlatforms.length !== 1 ? "s" : ""}`);
+          navigate({ to: "/calendar" });
+        },
+      },
+    );
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
@@ -73,7 +98,9 @@ function NewPost() {
           </div>
         </Card>
 
-        <Button size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Schedule across {activePlatforms.length} platform{activePlatforms.length !== 1 ? "s" : ""}</Button>
+        <Button size="lg" disabled={activePlatforms.length === 0 || createPosts.isPending} onClick={schedule} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+          {createPosts.isPending ? "Scheduling…" : `Schedule across ${activePlatforms.length} platform${activePlatforms.length !== 1 ? "s" : ""}`}
+        </Button>
       </div>
 
       <div>
@@ -81,7 +108,12 @@ function NewPost() {
           <h3 className="font-serif text-xl">Previews</h3>
           <span className="text-xs text-muted-foreground">Each rendered at the platform's native ratio</span>
         </div>
-        {activePlatforms.length === 0 ? (
+        {connectionsLoading ? null : connectedPlatforms.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/60 bg-card/40 p-10 text-center text-sm text-muted-foreground">
+            No platforms connected yet.{" "}
+            <Link to="/connections" className="text-primary hover:underline">Connect one</Link> to see previews here.
+          </div>
+        ) : activePlatforms.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/60 bg-card/40 p-10 text-center text-sm text-muted-foreground">Rejected everything. Undo below.</div>
         ) : (
           <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 2xl:grid-cols-3">

@@ -1,9 +1,12 @@
-import { Bell, Search } from "lucide-react";
-import { useRouterState } from "@tanstack/react-router";
+import { Bell, LogOut, Search } from "lucide-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -20,7 +23,16 @@ const titles: Record<string, string> = {
 
 export function AppTopbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const title = titles[pathname] ?? "Aureate";
+  const initials = (user?.email ?? "?").slice(0, 2).toUpperCase();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-md md:px-6">
       <SidebarTrigger className="text-foreground/80 hover:text-primary" />
@@ -38,9 +50,20 @@ export function AppTopbar() {
             <Bell className="size-4" />
             <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary" />
           </button>
-          <Avatar className="size-8 border border-primary/30">
-            <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">AR</AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="outline-none">
+              <Avatar className="size-8 border border-primary/30">
+                <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">{initials}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 border-border/60 bg-card">
+              <DropdownMenuLabel className="truncate text-xs text-muted-foreground">{user?.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                <LogOut className="mr-2 size-4" /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import { platformMeta } from "@/lib/mock-data";
 import { useAppStore, type Platform } from "@/lib/store";
+import { useAuth } from "@/lib/AuthProvider";
+import { supabase } from "@/lib/supabase";
 import { Check, User, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_app/onboarding")({
@@ -18,11 +20,43 @@ const allPlatforms: Platform[] = ["instagram", "facebook", "linkedin", "tiktok",
 function Onboarding() {
   const navigate = useNavigate();
   const store = useAppStore();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [tone, setTone] = useState(store.toneWords.join(", "));
   const [sample, setSample] = useState("We keep it warm, considered, a little playful. Never salesy. Details over hype.");
+  const [saving, setSaving] = useState(false);
 
-  const next = () => (step < 3 ? setStep(step + 1) : (store.setToneWords(tone.split(",").map((s) => s.trim()).filter(Boolean)), store.setOnboarded(true), navigate({ to: "/dashboard" })));
+  const finish = async () => {
+    const toneWords = tone.split(",").map((s) => s.trim()).filter(Boolean);
+    store.setToneWords(toneWords);
+    store.setOnboarded(true);
+    if (user) {
+      setSaving(true);
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        account_type: store.accountType,
+        brand_name: store.brandName,
+        tone_words: toneWords,
+        writing_sample: sample,
+      });
+      const connectedPlatforms = allPlatforms.filter((p) => store.connected[p]);
+      if (connectedPlatforms.length > 0) {
+        await supabase.from("platform_connections").upsert(
+          connectedPlatforms.map((platform) => ({
+            user_id: user.id,
+            platform,
+            status: "connected" as const,
+            connected_at: new Date().toISOString(),
+          })),
+          { onConflict: "user_id,platform" },
+        );
+      }
+      setSaving(false);
+    }
+    navigate({ to: "/dashboard" });
+  };
+
+  const next = () => (step < 3 ? setStep(step + 1) : finish());
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -94,7 +128,7 @@ function Onboarding() {
 
         <div className="mt-8 flex items-center justify-between">
           <Button variant="ghost" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>Back</Button>
-          <Button onClick={next} className="bg-primary text-primary-foreground hover:bg-primary/90">{step === 3 ? "Finish setup" : "Continue"}</Button>
+          <Button onClick={next} disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90">{saving ? "Saving…" : step === 3 ? "Finish setup" : "Continue"}</Button>
         </div>
       </Card>
     </div>
