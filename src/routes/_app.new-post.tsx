@@ -12,6 +12,7 @@ import { PostArt } from "@/components/PostArt";
 import type { Platform } from "@/lib/store";
 import { platformMeta } from "@/lib/mock-data";
 import { useConnections, useCreatePosts, useProfile, useAssets, useUploadAsset } from "@/lib/queries";
+import { generateCaption } from "@/lib/ai";
 import { Upload, Sparkles, RefreshCw, Edit3, X, Library } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ function NewPost() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [requireApproval, setRequireApproval] = useState(false);
   const [rejected, setRejected] = useState<Platform[]>([]);
+  const [writing, setWriting] = useState(false);
   const connectedPlatforms = (connections ?? []).filter((c) => c.status === "connected").map((c) => c.platform);
   const activePlatforms = connectedPlatforms.filter((p) => !rejected.includes(p));
 
@@ -55,6 +57,27 @@ function NewPost() {
         toast.success("Uploaded");
       },
     });
+  };
+
+  const rewrite = async () => {
+    setWriting(true);
+    try {
+      const text = await generateCaption({
+        data: {
+          draft: caption,
+          platform: activePlatforms[0] ? platformMeta[activePlatforms[0]].label : "social media",
+          brandName: profile?.brand_name ?? "",
+          toneWords: profile?.tone_words ?? [],
+          writingSample: profile?.writing_sample ?? "",
+          contentPillars: (profile?.content_pillars ?? []).map((p) => p.name),
+        },
+      });
+      setCaption(text);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't generate a caption.");
+    } finally {
+      setWriting(false);
+    }
   };
 
   const schedule = () => {
@@ -155,12 +178,13 @@ function NewPost() {
         <Card className="border-border/60 bg-card/60 p-5">
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-lg">Caption</h3>
-            <Button size="sm" variant="ghost" className="text-primary"><Sparkles className="mr-1 size-3.5" /> Rewrite</Button>
+            <Button size="sm" variant="ghost" disabled={writing} onClick={rewrite} className="text-primary">
+              <Sparkles className="mr-1 size-3.5" /> {writing ? "Writing…" : caption.trim() ? "Rewrite" : "Write with AI"}
+            </Button>
           </div>
-          <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} placeholder="What do you want to tell your audience?" className="mt-3 border-border/60 bg-background/40" />
+          <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} placeholder="What do you want to tell your audience? Or leave blank and let AI draft one from your brand voice." className="mt-3 border-border/60 bg-background/40" />
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>{caption.length} chars{profile?.brand_name ? ` · in ${profile.brand_name}'s voice` : ""}</span>
-            <span className="text-primary">4 hashtag suggestions</span>
           </div>
         </Card>
 
