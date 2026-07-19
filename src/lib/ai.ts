@@ -25,30 +25,43 @@ function buildPrompt(d: GenerateCaptionInput) {
   return lines.filter(Boolean).join("\n\n");
 }
 
+async function callGemini(apiKey: string, prompt: string): Promise<string> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    },
+  );
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    throw new Error(`Gemini request failed (${response.status}): ${errText.slice(0, 300)}`);
+  }
+
+  const json: { candidates?: { content?: { parts?: { text?: string }[] } }[] } = await response.json();
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned an empty response.");
+  return text.trim();
+}
+
 export const generateCaption = createServerFn({ method: "POST" })
   .validator((data: GenerateCaptionInput) => data)
   .handler(async ({ data }) => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const keys = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_BACKUP].filter((k): k is string => !!k);
+    if (keys.length === 0) {
       throw new Error("Gemini isn't configured on the server yet (missing GEMINI_API_KEY).");
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(data) }] }] }),
-      },
-    );
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      throw new Error(`Gemini request failed (${response.status}): ${errText.slice(0, 300)}`);
+    const prompt = buildPrompt(data);
+    let lastError: unknown;
+    for (const key of keys) {
+      try {
+        return await callGemini(key, prompt);
+      } catch (e) {
+        lastError = e;
+      }
     }
-
-    const json: { candidates?: { content?: { parts?: { text?: string }[] } }[] } = await response.json();
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Gemini returned an empty response.");
-    return text.trim();
+    throw lastError instanceof Error ? lastError : new Error("Gemini request failed.");
   });
