@@ -109,3 +109,46 @@ export const regenerateVoiceProfile = createServerFn({ method: "POST" })
     if (toneWords.length === 0 || !writingSample) throw new Error("Gemini returned an incomplete voice profile. Try again.");
     return { toneWords, writingSample };
   });
+
+type ParseVoiceCommandInput = {
+  transcript: string;
+  brandName: string;
+  toneWords: string[];
+  writingSample: string;
+  connectedPlatforms: string[];
+};
+
+function buildVoiceCommandPrompt(d: ParseVoiceCommandInput) {
+  return [
+    `A user of "${d.brandName || "this brand"}" spoke this voice command to draft a social media post:`,
+    `"${d.transcript.trim()}"`,
+    d.toneWords.length ? `Brand tone: ${d.toneWords.join(", ")}.` : "",
+    d.writingSample ? `Match the voice of this writing sample:\n"${d.writingSample}"` : "",
+    d.connectedPlatforms.length
+      ? `The user's connected platforms are: ${d.connectedPlatforms.join(", ")}. If they named specific ones in the command, return only those (using these exact lowercase ids). If they didn't mention any platform, return an empty array.`
+      : "",
+    `Respond with ONLY a JSON object of the exact shape:`,
+    `{"context": "a one-sentence summary of what the post should be about", "caption": "a finished, ready-to-post caption in the brand's voice", "platforms": ["..."]}`,
+    `No markdown, no explanation — just the JSON object.`,
+  ].filter(Boolean).join("\n\n");
+}
+
+export const parseVoiceCommand = createServerFn({ method: "POST" })
+  .validator((data: ParseVoiceCommandInput) => data)
+  .handler(async ({ data }) => {
+    if (!data.transcript.trim()) throw new Error("Didn't catch anything — try again.");
+    const raw = await callGeminiWithFallback(buildVoiceCommandPrompt(data), true);
+    let parsed: { context?: unknown; caption?: unknown; platforms?: unknown };
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("Gemini returned an unexpected format. Try again.");
+    }
+    const context = typeof parsed.context === "string" ? parsed.context : "";
+    const caption = typeof parsed.caption === "string" ? parsed.caption : "";
+    const platforms = Array.isArray(parsed.platforms)
+      ? parsed.platforms.filter((p): p is string => typeof p === "string" && data.connectedPlatforms.includes(p))
+      : [];
+    if (!caption) throw new Error("Couldn't turn that into a draft. Try again.");
+    return { context, caption, platforms };
+  });

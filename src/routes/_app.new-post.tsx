@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +17,14 @@ import { generateCaption } from "@/lib/ai";
 import { Upload, Sparkles, RefreshCw, Edit3, X, Library } from "lucide-react";
 import { toast } from "sonner";
 
+const newPostSearchSchema = z.object({
+  draftCaption: z.string().optional(),
+  draftContext: z.string().optional(),
+  draftPlatforms: z.string().optional(),
+});
+
 export const Route = createFileRoute("/_app/new-post")({
+  validateSearch: newPostSearchSchema,
   component: NewPost,
 });
 
@@ -24,14 +32,15 @@ type AssetState = { kind: "none" } | { kind: "uploaded"; assetId: string; url: s
 
 function NewPost() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { data: profile } = useProfile();
   const { data: libraryAssets } = useAssets();
   const createPosts = useCreatePosts();
   const uploadAsset = useUploadAsset();
   const brandHandle = profile?.brand_name ? profile.brand_name.toLowerCase().replace(/[^a-z0-9]/g, "") : "yourbrand";
-  const [caption, setCaption] = useState("");
-  const [context, setContext] = useState("");
+  const [caption, setCaption] = useState(search.draftCaption ?? "");
+  const [context, setContext] = useState(search.draftContext ?? "");
   const [asset, setAsset] = useState<AssetState>({ kind: "none" });
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -40,6 +49,8 @@ function NewPost() {
   const [rejected, setRejected] = useState<Platform[]>([]);
   const [writing, setWriting] = useState(false);
   const approvalSeeded = useRef(false);
+  const draftSeeded = useRef(false);
+  const hasDraft = !!(search.draftCaption || search.draftContext || search.draftPlatforms);
   const connectedPlatforms = (connections ?? []).filter((c) => c.status === "connected").map((c) => c.platform);
   const activePlatforms = connectedPlatforms.filter((p) => !rejected.includes(p));
 
@@ -48,6 +59,16 @@ function NewPost() {
       if (asset.kind === "uploaded" && asset.url.startsWith("blob:")) URL.revokeObjectURL(asset.url);
     };
   }, [asset]);
+
+  useEffect(() => {
+    if (draftSeeded.current || !hasDraft || connectionsLoading) return;
+    draftSeeded.current = true;
+    if (search.draftPlatforms) {
+      const wanted = search.draftPlatforms.split(",").filter(Boolean) as Platform[];
+      if (wanted.length > 0) setRejected(connectedPlatforms.filter((p) => !wanted.includes(p)));
+    }
+    navigate({ to: "/new-post", search: {}, replace: true });
+  }, [hasDraft, connectionsLoading, search.draftPlatforms, connectedPlatforms, navigate]);
 
   useEffect(() => {
     if (approvalSeeded.current || !profile) return;
