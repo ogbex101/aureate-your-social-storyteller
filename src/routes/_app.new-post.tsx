@@ -31,6 +31,7 @@ function NewPost() {
   const uploadAsset = useUploadAsset();
   const brandHandle = profile?.brand_name ? profile.brand_name.toLowerCase().replace(/[^a-z0-9]/g, "") : "yourbrand";
   const [caption, setCaption] = useState("");
+  const [context, setContext] = useState("");
   const [asset, setAsset] = useState<AssetState>({ kind: "none" });
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -70,6 +71,7 @@ function NewPost() {
           toneWords: profile?.tone_words ?? [],
           writingSample: profile?.writing_sample ?? "",
           contentPillars: (profile?.content_pillars ?? []).map((p) => p.name),
+          context,
         },
       });
       setCaption(text);
@@ -182,6 +184,9 @@ function NewPost() {
               <Sparkles className="mr-1 size-3.5" /> {writing ? "Writing…" : caption.trim() ? "Rewrite" : "Write with AI"}
             </Button>
           </div>
+          <Label className="mt-3 block text-xs text-muted-foreground">What's this post about?</Label>
+          <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={2} placeholder="e.g. Announcing our summer sale, 20% off all bags this weekend only." className="mt-1.5 border-border/60 bg-background/40 text-sm" />
+          <p className="mt-1 text-[11px] text-muted-foreground">The more detail you give, the better the AI caption. Used for both drafting and rewriting.</p>
           <Textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={6} placeholder="What do you want to tell your audience? Or leave blank and let AI draft one from your brand voice." className="mt-3 border-border/60 bg-background/40" />
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>{caption.length} chars{profile?.brand_name ? ` · in ${profile.brand_name}'s voice` : ""}</span>

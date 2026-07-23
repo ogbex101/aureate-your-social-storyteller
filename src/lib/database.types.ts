@@ -15,6 +15,9 @@ export type ProfileRow = {
   tone_words: string[];
   writing_sample: string;
   content_pillars: { name: string; desc: string }[];
+  logo_url: string | null;
+  phone_number: string | null;
+  telegram_username: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -27,6 +30,8 @@ export type PlatformConnectionRow = {
   access_token: string | null;
   refresh_token: string | null;
   connected_at: string | null;
+  handle: string | null;
+  profile_url: string | null;
 };
 
 export type AssetRow = {

@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProfile, useUpsertProfile } from "@/lib/queries";
+import { useProfile, useUpsertProfile, useUploadLogo, useLogoUrl } from "@/lib/queries";
+import { regenerateVoiceProfile } from "@/lib/ai";
 import { Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,7 +21,11 @@ type Pillar = { name: string; desc: string };
 function Brand() {
   const { data: profile, isLoading } = useProfile();
   const upsertProfile = useUpsertProfile();
+  const uploadLogo = useUploadLogo();
+  const { data: logoUrl } = useLogoUrl(profile?.logo_url);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const seeded = useRef(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const [brandName, setBrandName] = useState("");
   const [toneWords, setToneWords] = useState<string[]>([]);
@@ -48,6 +53,30 @@ function Brand() {
         onSuccess: () => toast.success("Brand settings saved"),
       },
     );
+  };
+
+  const handleLogoFile = (file: File | undefined) => {
+    if (!file) return;
+    uploadLogo.mutate(file, {
+      onError: (e) => toast.error(e.message),
+      onSuccess: () => toast.success("Logo updated"),
+    });
+  };
+
+  const regenerateVoice = async () => {
+    setRegenerating(true);
+    try {
+      const result = await regenerateVoiceProfile({
+        data: { brandName, currentSample: sample, currentTone: toneWords, contentPillars: pillars.map((p) => p.name) },
+      });
+      setToneWords(result.toneWords);
+      setSample(result.writingSample);
+      toast.success("Voice profile refreshed — review and save when ready");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't regenerate voice profile.");
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const addPillar = () => {
@@ -79,10 +108,16 @@ function Brand() {
               <div>
                 <Label>Logo</Label>
                 <div className="mt-1 flex items-center gap-3">
-                  <div className="flex size-16 items-center justify-center rounded-lg bg-primary text-primary-foreground font-serif text-2xl font-bold">{(brandName || "A").charAt(0).toUpperCase()}</div>
-                  <Button variant="outline" size="sm" className="border-primary/40 text-primary hover:bg-primary/10" disabled>Replace</Button>
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="size-16 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex size-16 items-center justify-center rounded-lg bg-primary text-primary-foreground font-serif text-2xl font-bold">{(brandName || "A").charAt(0).toUpperCase()}</div>
+                  )}
+                  <Button variant="outline" size="sm" disabled={uploadLogo.isPending} className="border-primary/40 text-primary hover:bg-primary/10" onClick={() => logoInputRef.current?.click()}>
+                    {uploadLogo.isPending ? "Uploading…" : "Replace"}
+                  </Button>
+                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoFile(e.target.files?.[0])} />
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Logo upload lands in a later phase.</p>
               </div>
               <div>
                 <Label>Brand colors</Label>
@@ -115,7 +150,10 @@ function Brand() {
             </div>
             <Label className="mt-6 block">Writing sample</Label>
             <Textarea value={sample} onChange={(e) => setSample(e.target.value)} placeholder="Paste a few sentences that sound like you." rows={4} className="mt-2 border-border/60 bg-background/40" />
-            <Button size="sm" variant="ghost" className="mt-3 text-primary" disabled><Sparkles className="mr-1 size-3.5" /> Regenerate voice profile</Button>
+            <Button size="sm" variant="ghost" disabled={regenerating || !sample.trim()} onClick={regenerateVoice} className="mt-3 text-primary">
+              <Sparkles className="mr-1 size-3.5" /> {regenerating ? "Regenerating…" : "Regenerate voice profile"}
+            </Button>
+            {!sample.trim() && <p className="mt-1 text-xs text-muted-foreground">Add a writing sample first.</p>}
           </Card>
         </div>
 
@@ -127,13 +165,16 @@ function Brand() {
           <div className="mt-4 space-y-3">
             {pillars.map((p, i) => (
               <div key={`${p.name}-${i}`} className="rounded-lg border border-border/50 bg-background/40 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-serif text-base">{p.name}</p>
-                    {p.desc && <p className="mt-0.5 text-xs text-muted-foreground">{p.desc}</p>}
-                  </div>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="flex-1 font-serif text-base">{p.name}</p>
                   <button onClick={() => setPillars(pillars.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="size-4" /></button>
                 </div>
+                <Input
+                  value={p.desc}
+                  onChange={(e) => setPillars(pillars.map((x, j) => (j === i ? { ...x, desc: e.target.value } : x)))}
+                  placeholder="What this pillar covers…"
+                  className="mt-2 h-8 border-border/40 bg-transparent text-xs"
+                />
               </div>
             ))}
             {pillars.length === 0 && <p className="text-sm text-muted-foreground">No content pillars yet.</p>}

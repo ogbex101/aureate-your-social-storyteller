@@ -32,6 +32,34 @@ export function useUpsertProfile() {
   });
 }
 
+export function useLogoUrl(path: string | null | undefined) {
+  return useQuery({
+    queryKey: ["logo-url", path],
+    queryFn: async (): Promise<string | null> => {
+      const { data } = await supabase.storage.from(ASSET_BUCKET).createSignedUrl(path!, 3600);
+      return data?.signedUrl ?? null;
+    },
+    enabled: !!path,
+  });
+}
+
+export function useUploadLogo() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      if (!user) throw new Error("Not signed in");
+      const path = `${user.id}/logo-${crypto.randomUUID()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from(ASSET_BUCKET).upload(path, file);
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("profiles").upsert({ id: user.id, logo_url: path });
+      if (error) throw error;
+      return path;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile", user?.id] }),
+  });
+}
+
 export function usePosts() {
   const { user } = useAuth();
   return useQuery({
@@ -171,6 +199,22 @@ export function useUpdateAssetTags() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", user?.id] }),
+  });
+}
+
+export function useUpdateConnectionDetails() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ platform, handle, profile_url }: { platform: Platform; handle: string; profile_url: string }) => {
+      if (!user) throw new Error("Not signed in");
+      const { error } = await supabase.from("platform_connections").upsert(
+        { user_id: user.id, platform, handle, profile_url },
+        { onConflict: "user_id,platform" },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["connections", user?.id] }),
   });
 }
 
