@@ -18,6 +18,9 @@ export type ProfileRow = {
   logo_url: string | null;
   phone_number: string | null;
   telegram_username: string | null;
+  auto_post_default: boolean;
+  default_post_time: string | null;
+  recurring_slots: { days: string[]; time: string }[];
   created_at: string;
   updated_at: string;
 };

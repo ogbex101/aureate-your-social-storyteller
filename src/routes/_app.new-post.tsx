@@ -39,6 +39,7 @@ function NewPost() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [rejected, setRejected] = useState<Platform[]>([]);
   const [writing, setWriting] = useState(false);
+  const approvalSeeded = useRef(false);
   const connectedPlatforms = (connections ?? []).filter((c) => c.status === "connected").map((c) => c.platform);
   const activePlatforms = connectedPlatforms.filter((p) => !rejected.includes(p));
 
@@ -47,6 +48,12 @@ function NewPost() {
       if (asset.kind === "uploaded" && asset.url.startsWith("blob:")) URL.revokeObjectURL(asset.url);
     };
   }, [asset]);
+
+  useEffect(() => {
+    if (approvalSeeded.current || !profile) return;
+    approvalSeeded.current = true;
+    setRequireApproval(!profile.auto_post_default);
+  }, [profile]);
 
   const handleUpload = (file: File | undefined) => {
     if (!file) return;
