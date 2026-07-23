@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTeamRouteImport } from './routes/_app.team'
 import { Route as AppScheduleRouteImport } from './routes/_app.schedule'
+import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppOnboardingRouteImport } from './routes/_app.onboarding'
 import { Route as AppNewPostRouteImport } from './routes/_app.new-post'
 import { Route as AppMessagingRouteImport } from './routes/_app.messaging'
@@ -46,6 +47,11 @@ const AppTeamRoute = AppTeamRouteImport.update({
 const AppScheduleRoute = AppScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOnboardingRoute = AppOnboardingRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/messaging': typeof AppMessagingRoute
   '/new-post': typeof AppNewPostRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/profile': typeof AppProfileRoute
   '/schedule': typeof AppScheduleRoute
   '/team': typeof AppTeamRoute
 }
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/messaging': typeof AppMessagingRoute
   '/new-post': typeof AppNewPostRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/profile': typeof AppProfileRoute
   '/schedule': typeof AppScheduleRoute
   '/team': typeof AppTeamRoute
 }
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/_app/messaging': typeof AppMessagingRoute
   '/_app/new-post': typeof AppNewPostRoute
   '/_app/onboarding': typeof AppOnboardingRoute
+  '/_app/profile': typeof AppProfileRoute
   '/_app/schedule': typeof AppScheduleRoute
   '/_app/team': typeof AppTeamRoute
 }
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/messaging'
     | '/new-post'
     | '/onboarding'
+    | '/profile'
     | '/schedule'
     | '/team'
   fileRoutesByTo: FileRoutesByTo
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/messaging'
     | '/new-post'
     | '/onboarding'
+    | '/profile'
     | '/schedule'
     | '/team'
   id:
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/_app/messaging'
     | '/_app/new-post'
     | '/_app/onboarding'
+    | '/_app/profile'
     | '/_app/schedule'
     | '/_app/team'
   fileRoutesById: FileRoutesById
@@ -231,6 +243,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof AppScheduleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/onboarding': {
@@ -309,6 +328,7 @@ interface AppRouteChildren {
   AppMessagingRoute: typeof AppMessagingRoute
   AppNewPostRoute: typeof AppNewPostRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppScheduleRoute: typeof AppScheduleRoute
   AppTeamRoute: typeof AppTeamRoute
 }
@@ -323,6 +343,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMessagingRoute: AppMessagingRoute,
   AppNewPostRoute: AppNewPostRoute,
   AppOnboardingRoute: AppOnboardingRoute,
+  AppProfileRoute: AppProfileRoute,
   AppScheduleRoute: AppScheduleRoute,
   AppTeamRoute: AppTeamRoute,
 }

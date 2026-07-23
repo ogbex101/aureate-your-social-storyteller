@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, CalendarDays, PenSquare, Users, Link2, MessageSquare, BarChart3, Sparkles, Settings, Clock, Image } from "lucide-react";
+import { LayoutDashboard, CalendarDays, PenSquare, Users, Link2, MessageSquare, BarChart3, Sparkles, Settings, Clock, Image, UserCircle } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 import { useProfile } from "@/lib/queries";
 
@@ -19,6 +19,7 @@ const secondary = [
 
 const settings = [
   { title: "Brand", url: "/brand", icon: Sparkles },
+  { title: "Profile", url: "/profile", icon: UserCircle },
   { title: "Team", url: "/team", icon: Users, orgOnly: true },
 ];
 
