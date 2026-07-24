@@ -102,6 +102,18 @@ export function useApprovePost() {
   });
 }
 
+export function useRejectPost() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from("posts").update({ status: "draft" }).eq("id", postId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["posts", user?.id] }),
+  });
+}
+
 export function useConnections() {
   const { user } = useAuth();
   return useQuery({

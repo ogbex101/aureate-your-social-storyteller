@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,26 +18,45 @@ export const Route = createFileRoute("/_app/calendar")({
   component: CalendarPage,
 });
 
+const localDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const startOfWeek = (d: Date) => { const s = new Date(d); s.setDate(d.getDate() - d.getDay()); s.setHours(0, 0, 0, 0); return s; };
+
 function CalendarPage() {
   const { data: posts, isLoading } = usePosts();
   const [view, setView] = useState<"month" | "week">("month");
   const [selected, setSelected] = useState<string | null>(null);
-  const [ref] = useState(new Date());
-  const year = ref.getFullYear();
-  const month = ref.getMonth();
+  const [refDate, setRefDate] = useState(new Date());
+
+  const today = new Date();
+  const year = refDate.getFullYear();
+  const month = refDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let i = 1; i <= daysInMonth; i++) cells.push(i);
-  while (cells.length % 7 !== 0) cells.push(null);
+  const monthCells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) monthCells.push(null);
+  for (let i = 1; i <= daysInMonth; i++) monthCells.push(i);
+  while (monthCells.length % 7 !== 0) monthCells.push(null);
+
+  const weekStart = startOfWeek(refDate);
+  const weekDates = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; });
 
   const iso = (d: number) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  const localDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const dateOf = (p: NonNullable<typeof posts>[number]) => (p.scheduled_time ? localDateKey(new Date(p.scheduled_time)) : null);
-  const postsFor = (d: number) => (posts ?? []).filter((p) => dateOf(p) === iso(d));
+  const postsFor = (dateKey: string) => (posts ?? []).filter((p) => dateOf(p) === dateKey);
+  const isSameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
   const selectedPosts = selected ? (posts ?? []).filter((p) => dateOf(p) === selected) : [];
+
+  const goPrev = () => setRefDate((d) => (view === "month" ? new Date(d.getFullYear(), d.getMonth() - 1, 1) : new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7)));
+  const goNext = () => setRefDate((d) => (view === "month" ? new Date(d.getFullYear(), d.getMonth() + 1, 1) : new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)));
+  const goToday = () => setRefDate(new Date());
+
+  const headerLabel =
+    view === "month"
+      ? refDate.toLocaleString("en-US", { month: "long", year: "numeric" })
+      : weekDates[0].getMonth() === weekDates[6].getMonth()
+        ? `${weekDates[0].toLocaleString("en-US", { month: "long", day: "numeric" })} – ${weekDates[6].getDate()}, ${weekDates[6].getFullYear()}`
+        : `${weekDates[0].toLocaleString("en-US", { month: "short", day: "numeric" })} – ${weekDates[6].toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
   if (isLoading) {
     return (
@@ -52,9 +71,10 @@ function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon"><ChevronLeft className="size-4" /></Button>
-          <h2 className="font-serif text-2xl">{ref.toLocaleString("en-US", { month: "long", year: "numeric" })}</h2>
-          <Button variant="ghost" size="icon"><ChevronRight className="size-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={goPrev} aria-label="Previous"><ChevronLeft className="size-4" /></Button>
+          <h2 className="font-serif text-2xl">{headerLabel}</h2>
+          <Button variant="ghost" size="icon" onClick={goNext} aria-label="Next"><ChevronRight className="size-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={goToday} className="text-xs text-muted-foreground hover:text-primary">Today</Button>
         </div>
         <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as "month" | "week")} className="border border-border/60 rounded-md">
           <ToggleGroupItem value="month" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Month</ToggleGroupItem>
@@ -66,28 +86,55 @@ function CalendarPage() {
         <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase tracking-widest text-muted-foreground">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="py-2">{d}</div>)}
         </div>
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((d, i) => {
-            if (!d) return <div key={i} className="aspect-square rounded-md bg-background/20" />;
-            const dayPosts = postsFor(d);
-            const isSelected = selected === iso(d);
-            const isToday = d === new Date().getDate() && month === new Date().getMonth();
-            const platforms = Array.from(new Set(dayPosts.map((p) => p.platform))) as Platform[];
-            return (
-              <button key={i} onClick={() => setSelected(iso(d))} className={`relative aspect-square rounded-md border p-1.5 text-left transition ${isSelected ? "border-primary bg-primary/10" : isToday ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40 hover:border-primary/30"}`}>
-                <span className={`text-xs ${isToday ? "font-serif text-primary font-semibold" : "text-foreground/80"}`}>{d}</span>
-                {dayPosts.length > 0 && (
-                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex flex-wrap gap-0.5">
-                    {platforms.slice(0, 4).map((p) => (
-                      <span key={p} className="size-1.5 rounded-full" style={{ backgroundColor: platformMeta[p].hue }} />
+
+        {view === "month" ? (
+          <div className="grid grid-cols-7 gap-1">
+            {monthCells.map((d, i) => {
+              if (!d) return <div key={i} className="aspect-square rounded-md bg-background/20" />;
+              const dateKey = iso(d);
+              const dayPosts = postsFor(dateKey);
+              const isSelected = selected === dateKey;
+              const isToday = isSameDay(new Date(year, month, d), today);
+              const platforms = Array.from(new Set(dayPosts.map((p) => p.platform))) as Platform[];
+              return (
+                <button key={i} onClick={() => setSelected(dateKey)} className={`relative aspect-square rounded-md border p-1.5 text-left transition ${isSelected ? "border-primary bg-primary/10" : isToday ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40 hover:border-primary/30"}`}>
+                  <span className={`text-xs ${isToday ? "font-serif text-primary font-semibold" : "text-foreground/80"}`}>{d}</span>
+                  {dayPosts.length > 0 && (
+                    <div className="absolute bottom-1.5 left-1.5 right-1.5 flex flex-wrap gap-0.5">
+                      {platforms.slice(0, 4).map((p) => (
+                        <span key={p} className="size-1.5 rounded-full" style={{ backgroundColor: platformMeta[p].hue }} />
+                      ))}
+                      {platforms.length > 4 && <span className="text-[9px] text-muted-foreground">+{platforms.length - 4}</span>}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-1">
+            {weekDates.map((d, i) => {
+              const dateKey = localDateKey(d);
+              const dayPosts = postsFor(dateKey);
+              const isSelected = selected === dateKey;
+              const isToday = isSameDay(d, today);
+              return (
+                <button key={i} onClick={() => setSelected(dateKey)} className={`flex min-h-40 flex-col items-start gap-1 rounded-md border p-2 text-left transition ${isSelected ? "border-primary bg-primary/10" : isToday ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40 hover:border-primary/30"}`}>
+                  <span className={`text-xs ${isToday ? "font-serif text-primary font-semibold" : "text-foreground/80"}`}>{d.getDate()}</span>
+                  <div className="flex w-full flex-1 flex-col gap-1 overflow-hidden">
+                    {dayPosts.slice(0, 4).map((p) => (
+                      <div key={p.id} className="flex items-center gap-1 truncate rounded bg-background/60 px-1.5 py-1 text-[10px]">
+                        <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: platformMeta[p.platform].hue }} />
+                        <span className="truncate">{p.caption || platformMeta[p.platform].label}</span>
+                      </div>
                     ))}
-                    {platforms.length > 4 && <span className="text-[9px] text-muted-foreground">+{platforms.length - 4}</span>}
+                    {dayPosts.length > 4 && <span className="text-[9px] text-muted-foreground">+{dayPosts.length - 4} more</span>}
                   </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {!posts?.length && (
@@ -102,7 +149,12 @@ function CalendarPage() {
           </SheetHeader>
           <div className="mt-6 space-y-3">
             {selectedPosts.length === 0 ? (
-              <EmptyState icon={<CalendarDays className="size-5" />} title="Nothing scheduled" description="Draft a post to fill this day, or ask Aureate to suggest ideas from your content pillars." />
+              <EmptyState
+                icon={<CalendarDays className="size-5" />}
+                title="Nothing scheduled"
+                description="Draft a post to fill this day, or ask Aureate to suggest ideas from your content pillars."
+                action={<Link to="/new-post" className="text-xs text-primary hover:underline">Draft a post →</Link>}
+              />
             ) : selectedPosts.map((p) => (
               <div key={p.id} className="rounded-lg border border-border/50 bg-background/40 p-3">
                 <div className="flex items-start gap-3">

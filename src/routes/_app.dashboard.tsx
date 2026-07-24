@@ -6,20 +6,28 @@ import { PlatformIcon } from "@/components/PlatformIcon";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PostArt } from "@/components/PostArt";
 import { EmptyState } from "@/components/EmptyState";
-import { usePosts, useConnections, useApprovePost } from "@/lib/queries";
+import { usePosts, useConnections, useApprovePost, useRejectPost } from "@/lib/queries";
 import { useAuth } from "@/lib/AuthProvider";
-import { ArrowUpRight, CheckCircle2, Clock, TrendingUp, Link2, Sparkles } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock, TrendingUp, Link2, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
 });
 
+function greeting(hour: number) {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 function Dashboard() {
   const { user } = useAuth();
   const { data: posts, isLoading } = usePosts();
   const { data: connections } = useConnections();
   const approve = useApprovePost();
+  const reject = useRejectPost();
 
   const now = new Date();
   const startOfToday = new Date(now);
@@ -47,10 +55,11 @@ function Dashboard() {
     { label: "Scheduled", value: scheduledCount, icon: CheckCircle2 },
   ];
 
+  const activeStatuses = [...queuedStatuses, "posted"];
   const days = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(now);
     d.setDate(d.getDate() + i);
-    const count = (posts ?? []).filter((p) => p.scheduled_time && new Date(p.scheduled_time).toDateString() === d.toDateString()).length;
+    const count = (posts ?? []).filter((p) => activeStatuses.includes(p.status) && p.scheduled_time && new Date(p.scheduled_time).toDateString() === d.toDateString()).length;
     return { label: d.toLocaleDateString("en-US", { weekday: "short" }), day: d.getDate(), count };
   });
 
@@ -69,13 +78,26 @@ function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-primary">{now.toLocaleDateString("en-US", { weekday: "long" })}</p>
-          <h2 className="mt-1 font-serif text-3xl">Good morning{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h2>
+          <h2 className="mt-1 font-serif text-3xl">{greeting(now.getHours())}{user?.email ? `, ${user.email.split("@")[0]}` : ""}.</h2>
           <p className="text-muted-foreground">
             {pendingApprovals.length > 0 ? `${pendingApprovals.length} post${pendingApprovals.length !== 1 ? "s" : ""} need your eyes before they go out.` : "You're all caught up."}
           </p>
         </div>
         <Link to="/new-post"><Button className="bg-primary text-primary-foreground hover:bg-primary/90">Draft a new post</Button></Link>
       </div>
+
+      {connectedCount === 0 && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary"><Link2 className="size-4" /></div>
+            <div>
+              <p className="text-sm font-medium">No platforms connected yet</p>
+              <p className="text-xs text-muted-foreground">Connect at least one to start scheduling posts.</p>
+            </div>
+          </div>
+          <Link to="/connections"><Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">Connect a platform</Button></Link>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
@@ -120,7 +142,15 @@ function Dashboard() {
                   >
                     Approve
                   </Button>
-                  <Link to="/new-post"><Button size="sm" variant="ghost" className="w-full text-muted-foreground">Edit</Button></Link>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={reject.isPending}
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => reject.mutate(p.id, { onError: (e) => toast.error(e.message), onSuccess: () => toast.success("Sent back to drafts") })}
+                  >
+                    <X className="mr-1 size-3" /> Reject
+                  </Button>
                 </div>
               </div>
             ))}
