@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 const GEMINI_MODEL = "gemini-3.5-flash";
+const GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image";
 
 function getGeminiKeys(): string[] {
   return [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_BACKUP].filter((k): k is string => !!k);
@@ -28,6 +29,47 @@ async function callGemini(apiKey: string, prompt: string, jsonMode = false): Pro
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Gemini returned an empty response.");
   return text.trim();
+}
+
+async function callGeminiImage(apiKey: string, prompt: string): Promise<{ mimeType: string; data: string }> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    throw new Error(`Gemini image request failed (${response.status}): ${errText.slice(0, 300)}`);
+  }
+
+  const json: { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[] } = await response.json();
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((p) => p.inlineData?.data);
+  if (!imagePart?.inlineData?.data) throw new Error("Gemini didn't return an image.");
+  return { mimeType: imagePart.inlineData.mimeType || "image/png", data: imagePart.inlineData.data };
+}
+
+async function callGeminiImageWithFallback(prompt: string): Promise<{ mimeType: string; data: string }> {
+  const keys = getGeminiKeys();
+  if (keys.length === 0) {
+    throw new Error("Gemini isn't configured on the server yet (missing GEMINI_API_KEY).");
+  }
+  let lastError: unknown;
+  for (const key of keys) {
+    try {
+      return await callGeminiImage(key, prompt);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Gemini image request failed.");
 }
 
 async function callGeminiWithFallback(prompt: string, jsonMode = false): Promise<string> {
@@ -151,4 +193,26 @@ export const parseVoiceCommand = createServerFn({ method: "POST" })
       : [];
     if (!caption) throw new Error("Couldn't turn that into a draft. Try again.");
     return { context, caption, platforms };
+  });
+
+type GenerateImageInput = {
+  brandName: string;
+  toneWords: string[];
+  context: string;
+};
+
+function buildImagePrompt(d: GenerateImageInput) {
+  return [
+    `Generate a premium, professional social media marketing image for the brand "${d.brandName || "this brand"}".`,
+    `What the image should show: ${d.context.trim()}`,
+    d.toneWords.length ? `Visual mood: ${d.toneWords.join(", ")}.` : "",
+    `Style: clean, modern, high-end commercial photography or graphic design. No text, no watermarks, no logos.`,
+  ].filter(Boolean).join("\n\n");
+}
+
+export const generateImage = createServerFn({ method: "POST" })
+  .validator((data: GenerateImageInput) => data)
+  .handler(async ({ data }) => {
+    if (!data.context.trim()) throw new Error("Add a caption or context first so AI knows what to generate.");
+    return callGeminiImageWithFallback(buildImagePrompt(data));
   });

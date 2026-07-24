@@ -9,11 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PostPreview } from "@/components/PostPreview";
 import { PlatformIcon } from "@/components/PlatformIcon";
-import { PostArt } from "@/components/PostArt";
 import type { Platform } from "@/lib/store";
 import { platformMeta } from "@/lib/mock-data";
 import { useConnections, useCreatePosts, useProfile, useAssets, useUploadAsset } from "@/lib/queries";
-import { generateCaption } from "@/lib/ai";
+import { generateCaption, generateImage } from "@/lib/ai";
 import { Upload, Sparkles, RefreshCw, Edit3, X, Library } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,7 +27,14 @@ export const Route = createFileRoute("/_app/new-post")({
   component: NewPost,
 });
 
-type AssetState = { kind: "none" } | { kind: "uploaded"; assetId: string; url: string; name: string } | { kind: "ai" };
+type AssetState = { kind: "none" } | { kind: "uploaded"; assetId: string; url: string; name: string };
+
+function base64ToFile(base64: string, mimeType: string, name: string): File {
+  const byteChars = atob(base64);
+  const bytes = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  return new File([bytes], name, { type: mimeType });
+}
 
 function NewPost() {
   const navigate = useNavigate();
@@ -48,6 +54,7 @@ function NewPost() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [rejected, setRejected] = useState<Platform[]>([]);
   const [writing, setWriting] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const approvalSeeded = useRef(false);
   const draftSeeded = useRef(false);
   const hasDraft = !!(search.draftCaption || search.draftContext || search.draftPlatforms);
@@ -86,6 +93,34 @@ function NewPost() {
         toast.success("Uploaded");
       },
     });
+  };
+
+  const generateImageAsset = async () => {
+    const prompt = context.trim() || caption.trim();
+    if (!prompt) {
+      toast.error("Add a caption or context first so AI knows what to generate.");
+      return;
+    }
+    setGeneratingImage(true);
+    try {
+      const result = await generateImage({
+        data: { brandName: profile?.brand_name ?? "", toneWords: profile?.tone_words ?? [], context: prompt },
+      });
+      const ext = result.mimeType.split("/")[1] || "png";
+      const file = base64ToFile(result.data, result.mimeType, `ai-generated-${Date.now()}.${ext}`);
+      const previewUrl = URL.createObjectURL(file);
+      uploadAsset.mutate(file, {
+        onError: (e) => { toast.error(e.message); URL.revokeObjectURL(previewUrl); },
+        onSuccess: (row) => {
+          setAsset({ kind: "uploaded", assetId: row.id, url: previewUrl, name: row.file_name });
+          toast.success("Image generated");
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't generate an image.");
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const rewrite = async () => {
@@ -146,14 +181,11 @@ function NewPost() {
               </div>
               <p className="mt-2 text-xs text-muted-foreground">Aureate will crop per platform automatically.</p>
             </div>
-          ) : asset.kind === "ai" ? (
-            <div className="mt-3">
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg">
-                <PostArt seed="new-post-asset" className="absolute inset-0 h-full w-full" />
-                <button onClick={() => setAsset({ kind: "none" })} className="absolute right-2 top-2 rounded-md bg-black/40 p-1.5 text-cream backdrop-blur"><X className="size-3.5" /></button>
-                <div className="absolute bottom-2 left-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-cream backdrop-blur">AI-generated image (preview)</div>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">Real AI image generation lands in a later phase.</p>
+          ) : generatingImage ? (
+            <div className="mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-primary/40 bg-background/40 p-8 text-center">
+              <div className="size-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              <p className="mt-3 text-sm">Generating your image…</p>
+              <p className="mt-1 text-xs text-muted-foreground">This can take a few seconds.</p>
             </div>
           ) : (
             <div
@@ -178,8 +210,8 @@ function NewPost() {
                     <Library className="mr-1.5 size-3.5" /> From library
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="border-primary/40 text-primary hover:bg-primary/10" onClick={() => setAsset({ kind: "ai" })}>
-                  <Sparkles className="mr-1.5 size-3.5" /> Generate with AI
+                <Button variant="outline" size="sm" disabled={generatingImage} className="border-primary/40 text-primary hover:bg-primary/10" onClick={generateImageAsset}>
+                  <Sparkles className="mr-1.5 size-3.5" /> {generatingImage ? "Generating…" : "Generate with AI"}
                 </Button>
               </div>
             </div>
